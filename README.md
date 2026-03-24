@@ -1,5 +1,7 @@
 # 🐻🐾 Bearclaw
 
+[中文文档](README_CN.md)
+
 A Rust CLI tool for managing [Bear](https://bear.app) notes on macOS. Designed for AI agent integration with structured JSON output.
 
 ## Features
@@ -80,54 +82,54 @@ bearclaw stats
 
 ### Note Operations
 
-| Command | Description |
-|---------|-------------|
-| `bearclaw read <id-or-title>` | Read a note's full content |
-| `bearclaw search <query>` | Search notes (`--ocr`, `--tag`, `--since`, `--before`, `--limit`) |
-| `bearclaw create --title "x" --body "y"` | Create a new note (`--tags`, `--body-file`) |
-| `bearclaw edit <id> --body "x"` | Replace note body (`--body-file`) |
-| `bearclaw append <id> --text "x"` | Append text (`--header`, `--text-file`) |
-| `bearclaw prepend <id> --text "x"` | Prepend text (`--text-file`) |
-| `bearclaw section <id> --header "x"` | Extract a section by header |
-| `bearclaw trash <id>` | Move note to trash |
-| `bearclaw archive <id>` | Archive a note |
+| Command                                  | Description                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| `bearclaw read <id-or-title>`            | Read a note's full content                                        |
+| `bearclaw search <query>`                | Search notes (`--ocr`, `--tag`, `--since`, `--before`, `--limit`) |
+| `bearclaw create --title "x" --body "y"` | Create a new note (`--tags`, `--body-file`)                       |
+| `bearclaw edit <id> --body "x"`          | Replace note body (`--body-file`)                                 |
+| `bearclaw append <id> --text "x"`        | Append text (`--header`, `--text-file`)                           |
+| `bearclaw prepend <id> --text "x"`       | Prepend text (`--text-file`)                                      |
+| `bearclaw section <id> --header "x"`     | Extract a section by header                                       |
+| `bearclaw trash <id>`                    | Move note to trash                                                |
+| `bearclaw archive <id>`                  | Archive a note                                                    |
 
 ### Tag Operations
 
-| Command | Description |
-|---------|-------------|
-| `bearclaw tag list` | List all tags as hierarchical tree |
-| `bearclaw tag add <id> --tags "a,b"` | Add tags to a note |
-| `bearclaw tag rename <old> <new>` | Rename a tag |
-| `bearclaw tag delete <name>` | Delete a tag |
-| `bearclaw untagged` | List notes without tags |
+| Command                              | Description                        |
+| ------------------------------------ | ---------------------------------- |
+| `bearclaw tag list`                  | List all tags as hierarchical tree |
+| `bearclaw tag add <id> --tags "a,b"` | Add tags to a note                 |
+| `bearclaw tag rename <old> <new>`    | Rename a tag                       |
+| `bearclaw tag delete <name>`         | Delete a tag                       |
+| `bearclaw untagged`                  | List notes without tags            |
 
 ### Analysis & Links
 
-| Command | Description |
-|---------|-------------|
+| Command                            | Description                     |
+| ---------------------------------- | ------------------------------- |
 | `bearclaw backlinks <id-or-title>` | Find notes linking to this note |
-| `bearclaw stats` | Show statistics |
+| `bearclaw stats`                   | Show statistics                 |
 
 ### Batch & Export
 
-| Command | Description |
-|---------|-------------|
-| `bearclaw batch tag --filter "q" --tags "a,b"` | Bulk add tags |
-| `bearclaw batch archive --filter "q"` | Bulk archive |
-| `bearclaw export --output ./dir/` | Export as Markdown (`--tag`, `--since`, `--before`) |
+| Command                                        | Description                                         |
+| ---------------------------------------------- | --------------------------------------------------- |
+| `bearclaw batch tag --filter "q" --tags "a,b"` | Bulk add tags                                       |
+| `bearclaw batch archive --filter "q"`          | Bulk archive                                        |
+| `bearclaw export --output ./dir/`              | Export as Markdown (`--tag`, `--since`, `--before`) |
 
 ### Diagnostics
 
-| Command | Description |
-|---------|-------------|
+| Command           | Description                                 |
+| ----------------- | ------------------------------------------- |
 | `bearclaw health` | Check Bear installation and database status |
 
 ### Global Options
 
-| Option | Description |
-|--------|-------------|
-| `--pretty` | Pretty-print JSON output |
+| Option             | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `--pretty`         | Pretty-print JSON output                         |
 | `--db-path <path>` | Custom database path (or `BEAR_DB_PATH` env var) |
 
 ## JSON Output
@@ -173,6 +175,7 @@ You have access to `bearclaw`, a CLI tool for managing Bear notes on macOS.
 All commands output JSON. Use `bearclaw <command> --help` for usage details.
 
 Available commands:
+
 - `bearclaw search <query>` — search notes (--ocr, --tag, --since, --before, --limit)
 - `bearclaw read <id>` — read a note's full content
 - `bearclaw create --title "x" --body "y" --tags "a,b"` — create a note
@@ -189,47 +192,7 @@ Use note ID (not title) for write operations. Use `\n` for newlines in --body/--
 
 ---
 
-### Cursor / Windsurf / Other Agents
-
-Add the following to your project's rules file (`.cursorrules`, `.windsurfrules`, or equivalent):
-
-```markdown
-## Bear Notes Tool
-
-You have access to `bearclaw`, a CLI tool for managing Bear notes.
-Run bearclaw commands via the terminal. All output is JSON.
-
-Examples:
-- Search: `bearclaw search "keyword" --limit 10`
-- Read: `bearclaw read <note-id>`
-- Create: `bearclaw create --title "Title" --body "Content" --tags "tag1,tag2"`
-- Tags: `bearclaw tag list`
-- Stats: `bearclaw stats`
-
-Always use note ID (not title) for write operations (edit, append, trash, archive, tag add).
-Run `bearclaw health` to verify the tool is working.
-```
-
----
-
-### Any Agent (Generic)
-
-For any AI agent that can execute shell commands, provide these instructions:
-
-1. **Verify**: Run `bearclaw health` to check the tool is available
-2. **Search first**: Use `bearclaw search` to find notes and get their IDs
-3. **Read by ID**: Use `bearclaw read <id>` to get full note content
-4. **Write by ID**: All write operations (`edit`, `append`, `trash`, `archive`, `tag add`) require note ID
-5. **Parse JSON**: All output is JSON with `{"ok": true/false, ...}` structure
-
 ## Architecture
-
-```
-┌──────────┐     ┌───────────┐     ┌──────────────┐
-│ AI Agent │────▶│ bearclaw  │────▶│ Bear SQLite  │ (read-only)
-│          │◀────│ (Rust)    │────▶│ Bear x-callback-url │ (writes)
-└──────────┘JSON └───────────┘     └──────────────┘
-```
 
 - **Reads**: Direct SQLite access (fast, no Bear app needed)
 - **Writes**: Bear's official `x-callback-url` API (safe, requires Bear running)
