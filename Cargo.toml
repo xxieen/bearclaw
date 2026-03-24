@@ -1,0 +1,19 @@
+[package]
+name = "bearclaw"
+version = "0.1.0"
+edition = "2024"
+description = "CLI tool for Bear notes app - read, write, search, and manage notes"
+license = "MIT"
+repository = "https://github.com/xxieen/bearclaw"
+keywords = ["bear", "notes", "cli", "macos"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+rusqlite = { version = "0.35", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+dirs = "6"
+urlencoding = "2"
