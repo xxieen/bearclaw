@@ -166,29 +166,16 @@ The skill will be loaded automatically when you ask about Bear notes. First-time
 
 ### Claude Code
 
-Add bearclaw as a tool in your project's `CLAUDE.md`:
+Copy the `.claude/skills/bear/` directory from this repository into your project:
 
-```markdown
-## Tools
-
-You have access to `bearclaw`, a CLI tool for managing Bear notes on macOS.
-All commands output JSON. Use `bearclaw <command> --help` for usage details.
-
-Available commands:
-
-- `bearclaw search <query>` — search notes (--ocr, --tag, --since, --before, --limit)
-- `bearclaw read <id>` — read a note's full content
-- `bearclaw create --title "x" --body "y" --tags "a,b"` — create a note
-- `bearclaw edit <id> --body "x"` — replace note body
-- `bearclaw append <id> --text "x"` — append text to a note
-- `bearclaw tag list` — list all tags as tree
-- `bearclaw tag add <id> --tags "a,b"` — add tags to a note
-- `bearclaw untagged` — list untagged notes
-- `bearclaw stats` — show statistics
-- `bearclaw export --output ./dir/` — export notes as Markdown
-
-Use note ID (not title) for write operations. Use `\n` for newlines in --body/--text.
+```bash
+# Clone and copy the skill
+git clone https://github.com/xxieen/bearclaw.git /tmp/bearclaw
+cp -r /tmp/bearclaw/.claude/skills/bear .claude/skills/
+rm -rf /tmp/bearclaw
 ```
+
+Or manually create `.claude/skills/bear/SKILL.md` in your project. The skill will be available as `/bear` in Claude Code.
 
 ---
 

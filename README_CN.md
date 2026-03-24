@@ -164,29 +164,16 @@ amp skill add xxieen/bearclaw/bear
 
 ### Claude Code
 
-在你项目的 `CLAUDE.md` 中添加以下内容：
+将本仓库中的 `.claude/skills/bear/` 目录复制到你的项目中：
 
-```markdown
-## Tools
-
-You have access to `bearclaw`, a CLI tool for managing Bear notes on macOS.
-All commands output JSON. Use `bearclaw <command> --help` for usage details.
-
-Available commands:
-
-- `bearclaw search <query>` — search notes (--ocr, --tag, --since, --before, --limit)
-- `bearclaw read <id>` — read a note's full content
-- `bearclaw create --title "x" --body "y" --tags "a,b"` — create a note
-- `bearclaw edit <id> --body "x"` — replace note body
-- `bearclaw append <id> --text "x"` — append text to a note
-- `bearclaw tag list` — list all tags as tree
-- `bearclaw tag add <id> --tags "a,b"` — add tags to a note
-- `bearclaw untagged` — list untagged notes
-- `bearclaw stats` — show statistics
-- `bearclaw export --output ./dir/` — export notes as Markdown
-
-Use note ID (not title) for write operations. Use `\n` for newlines in --body/--text.
+```bash
+# 克隆并复制 Skill
+git clone https://github.com/xxieen/bearclaw.git /tmp/bearclaw
+cp -r /tmp/bearclaw/.claude/skills/bear .claude/skills/
+rm -rf /tmp/bearclaw
 ```
+
+或者手动在你的项目中创建 `.claude/skills/bear/SKILL.md`。安装后在 Claude Code 中可以通过 `/bear` 调用。
 
 ---
 
