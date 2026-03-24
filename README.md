@@ -1,8 +1,6 @@
-# 🐻 bearclaw
+# 🐻🐾 Bearclaw
 
 A Rust CLI tool for managing [Bear](https://bear.app) notes on macOS. Designed for AI agent integration with structured JSON output.
-
-Comes with an [Amp](https://ampcode.com) skill for natural language note management.
 
 ## Features
 
@@ -17,6 +15,8 @@ Comes with an [Amp](https://ampcode.com) skill for natural language note managem
 - 🤖 **Agent-friendly** — JSON output, designed for AI tool integration
 
 ## Installation
+
+> **Important**: The CLI tool must be installed before using any AI agent integration.
 
 ### Pre-built binary (recommended)
 
@@ -46,10 +46,16 @@ cd bearclaw
 cargo install --path .
 ```
 
+### Verify installation
+
+```bash
+bearclaw health
+```
+
 ### Requirements
 
 - macOS (Bear is macOS/iOS only)
-- [Bear](https://bear.app) installed
+- [Bear](https://bear.app) installed and running (for write operations)
 
 ## Quick Start
 
@@ -136,34 +142,92 @@ All commands return structured JSON:
 {"ok": false, "error": "Note not found", "code": "NOT_FOUND"}
 ```
 
-## Amp Skill Integration
+## AI Agent Integration
 
-This project includes an [Amp skill](https://ampcode.com) that lets you manage Bear notes with natural language.
+Bearclaw is designed to work with any AI coding agent. Below are setup guides for popular agents.
 
-### Install the Skill
+> **Prerequisite**: Install the `bearclaw` CLI first (see [Installation](#installation) above).
+
+---
+
+### Amp
+
+Install the bundled skill directly from this repository:
 
 ```bash
 amp skill add xxieen/bearclaw/bear
 ```
 
-### Usage
+The skill will be loaded automatically when you ask about Bear notes. First-time use will check if `bearclaw` is installed.
 
-Once installed, just talk to Amp naturally:
+---
 
-- *"Search my Bear notes about Rust"*
-- *"Organize my untagged notes"*
-- *"Create a note summarizing this conversation"*
-- *"Export all notes tagged 'work' to Markdown"*
-- *"Show me my note statistics"*
+### Claude Code
 
-Amp will automatically use the `bearclaw` commands to fulfill your requests.
+Add bearclaw as a tool in your project's `CLAUDE.md`:
+
+```markdown
+## Tools
+
+You have access to `bearclaw`, a CLI tool for managing Bear notes on macOS.
+All commands output JSON. Use `bearclaw <command> --help` for usage details.
+
+Available commands:
+- `bearclaw search <query>` — search notes (--ocr, --tag, --since, --before, --limit)
+- `bearclaw read <id>` — read a note's full content
+- `bearclaw create --title "x" --body "y" --tags "a,b"` — create a note
+- `bearclaw edit <id> --body "x"` — replace note body
+- `bearclaw append <id> --text "x"` — append text to a note
+- `bearclaw tag list` — list all tags as tree
+- `bearclaw tag add <id> --tags "a,b"` — add tags to a note
+- `bearclaw untagged` — list untagged notes
+- `bearclaw stats` — show statistics
+- `bearclaw export --output ./dir/` — export notes as Markdown
+
+Use note ID (not title) for write operations. Use `\n` for newlines in --body/--text.
+```
+
+---
+
+### Cursor / Windsurf / Other Agents
+
+Add the following to your project's rules file (`.cursorrules`, `.windsurfrules`, or equivalent):
+
+```markdown
+## Bear Notes Tool
+
+You have access to `bearclaw`, a CLI tool for managing Bear notes.
+Run bearclaw commands via the terminal. All output is JSON.
+
+Examples:
+- Search: `bearclaw search "keyword" --limit 10`
+- Read: `bearclaw read <note-id>`
+- Create: `bearclaw create --title "Title" --body "Content" --tags "tag1,tag2"`
+- Tags: `bearclaw tag list`
+- Stats: `bearclaw stats`
+
+Always use note ID (not title) for write operations (edit, append, trash, archive, tag add).
+Run `bearclaw health` to verify the tool is working.
+```
+
+---
+
+### Any Agent (Generic)
+
+For any AI agent that can execute shell commands, provide these instructions:
+
+1. **Verify**: Run `bearclaw health` to check the tool is available
+2. **Search first**: Use `bearclaw search` to find notes and get their IDs
+3. **Read by ID**: Use `bearclaw read <id>` to get full note content
+4. **Write by ID**: All write operations (`edit`, `append`, `trash`, `archive`, `tag add`) require note ID
+5. **Parse JSON**: All output is JSON with `{"ok": true/false, ...}` structure
 
 ## Architecture
 
 ```
 ┌──────────┐     ┌───────────┐     ┌──────────────┐
 │ AI Agent │────▶│ bearclaw  │────▶│ Bear SQLite  │ (read-only)
-│ (Amp)    │◀────│ (Rust)    │────▶│ Bear x-callback-url │ (writes)
+│          │◀────│ (Rust)    │────▶│ Bear x-callback-url │ (writes)
 └──────────┘JSON └───────────┘     └──────────────┘
 ```
 
