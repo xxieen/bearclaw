@@ -33,10 +33,10 @@ fn verify_write(db: &BearDB, note_id: &str, original_modified: Option<f64>) -> R
         thread::sleep(Duration::from_millis(*delay));
         match original_modified {
             Some(orig) => {
-                if let Ok(Some(new_mod)) = db.get_note_modified_at(note_id) {
-                    if new_mod > orig {
-                        return Ok(true);
-                    }
+                if let Ok(Some(new_mod)) = db.get_note_modified_at(note_id)
+                    && new_mod > orig
+                {
+                    return Ok(true);
                 }
             }
             None => {

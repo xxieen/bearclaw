@@ -38,6 +38,7 @@ fn do_read(db: &BearDB, id_or_title: &str) -> Result<Option<Note>> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn search_notes(
     db: &BearDB,
     query: &str,

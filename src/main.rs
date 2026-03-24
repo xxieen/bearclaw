@@ -15,12 +15,9 @@ fn main() {
 
     let db_path = resolve_db_path(&cli);
 
-    match cli.command {
-        Commands::Health => {
-            run_health(&db_path, pretty);
-            return;
-        }
-        _ => {}
+    if let Commands::Health = cli.command {
+        run_health(&db_path, pretty);
+        return;
     }
 
     let db = match open_db(&db_path, pretty) {
@@ -163,15 +160,15 @@ fn run_health(db_path: &PathBuf, pretty: bool) {
         schema_ok: false,
     };
 
-    if db_exists {
-        if let Ok(db) = BearDB::open(db_path) {
-            status.schema_ok = db.check_schema();
-            if status.schema_ok {
-                if let Ok(stats) = db.get_stats() {
-                    status.note_count = Some(stats.total_notes);
-                    status.tag_count = Some(stats.total_tags);
-                }
-            }
+    if db_exists
+        && let Ok(db) = BearDB::open(db_path)
+    {
+        status.schema_ok = db.check_schema();
+        if status.schema_ok
+            && let Ok(stats) = db.get_stats()
+        {
+            status.note_count = Some(stats.total_notes);
+            status.tag_count = Some(stats.total_tags);
         }
     }
 

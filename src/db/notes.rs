@@ -453,11 +453,9 @@ fn extract_section(text: &str, header: &str) -> Option<String> {
                 if start.is_none() && h_text.eq_ignore_ascii_case(header) {
                     start = Some(i + 1);
                     header_level = level;
-                } else if let Some(_) = start {
-                    if level <= header_level {
-                        let content = lines[start.unwrap()..i].join("\n");
-                        return Some(content.trim().to_string());
-                    }
+                } else if start.is_some() && level <= header_level {
+                    let content = lines[start.unwrap()..i].join("\n");
+                    return Some(content.trim().to_string());
                 }
             }
         }
