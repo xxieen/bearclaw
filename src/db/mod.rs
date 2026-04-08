@@ -29,6 +29,21 @@ pub struct BearDB {
     conn: Connection,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoteLocation {
+    Active,
+    Trashed,
+}
+
+impl NoteLocation {
+    pub(crate) fn trashed_flag(self) -> i32 {
+        match self {
+            Self::Active => 0,
+            Self::Trashed => 1,
+        }
+    }
+}
+
 impl BearDB {
     pub fn open(db_path: &PathBuf) -> Result<Self> {
         let conn = Connection::open_with_flags(

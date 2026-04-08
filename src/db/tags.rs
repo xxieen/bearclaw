@@ -1,20 +1,22 @@
 use anyhow::Result;
 
-use super::BearDB;
+use super::{BearDB, NoteLocation};
 use crate::models::Tag;
 
 impl BearDB {
-    pub fn list_tags(&self) -> Result<Vec<Tag>> {
+    pub fn list_tags(&self, location: NoteLocation) -> Result<Vec<Tag>> {
         let mut stmt = self.conn().prepare(
             "SELECT t.ZTITLE, COUNT(zt.Z_5NOTES) as note_count
              FROM ZSFNOTETAG t
-             LEFT JOIN Z_5TAGS zt ON t.Z_PK = zt.Z_13TAGS
+             JOIN Z_5TAGS zt ON t.Z_PK = zt.Z_13TAGS
+             JOIN ZSFNOTE n ON n.Z_PK = zt.Z_5NOTES
+             WHERE n.ZTRASHED = ?1 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0
              GROUP BY t.ZTITLE
              ORDER BY t.ZTITLE",
         )?;
 
         let flat_tags: Vec<(String, u32)> = stmt
-            .query_map([], |row| {
+            .query_map([location.trashed_flag()], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, u32>(1)?))
             })?
             .collect::<Result<Vec<_>, _>>()?;

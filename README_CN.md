@@ -82,8 +82,8 @@ bearclaw stats
 
 | 命令 | 说明 |
 |------|------|
-| `bearclaw read <ID或标题>` | 读取笔记完整内容 |
-| `bearclaw search <关键词>` | 搜索笔记（`--ocr`, `--tag`, `--since`, `--before`, `--limit`） |
+| `bearclaw read <ID或标题>` | 读取笔记完整内容，默认不含回收站，可用 `--trashed` 读取回收站 |
+| `bearclaw search <关键词>` | 搜索笔记（`--ocr`, `--tag`, `--since`, `--before`, `--limit`, `--trashed`） |
 | `bearclaw create --title "x" --body "y"` | 创建新笔记（`--tags`, `--body-file`） |
 | `bearclaw edit <ID> --body "x"` | 替换笔记正文（`--body-file`） |
 | `bearclaw append <ID> --text "x"` | 追加文本（`--header`, `--text-file`） |
@@ -96,11 +96,11 @@ bearclaw stats
 
 | 命令 | 说明 |
 |------|------|
-| `bearclaw tag list` | 树形展示所有标签及笔记数 |
+| `bearclaw tag list` | 树形展示所有标签及笔记数，默认不含回收站，可用 `--trashed` 查看回收站标签 |
 | `bearclaw tag add <ID> --tags "a,b"` | 给笔记添加标签 |
 | `bearclaw tag rename <旧名> <新名>` | 重命名标签 |
 | `bearclaw tag delete <标签名>` | 删除标签 |
-| `bearclaw untagged` | 列出未打标签的笔记 |
+| `bearclaw untagged` | 列出未打标签的笔记，默认不含回收站，可用 `--trashed` 查看回收站 |
 
 ### 分析与链接
 

@@ -21,6 +21,10 @@ pub enum Commands {
     Read {
         /// Note ID or title
         id_or_title: String,
+
+        /// Read from trash instead of active notes
+        #[arg(long)]
+        trashed: bool,
     },
 
     /// Search notes
@@ -47,6 +51,10 @@ pub enum Commands {
         /// Maximum number of results
         #[arg(long, default_value = "50")]
         limit: u32,
+
+        /// Search trash instead of active notes
+        #[arg(long)]
+        trashed: bool,
     },
 
     /// Create a new note
@@ -143,7 +151,11 @@ pub enum Commands {
     },
 
     /// List untagged notes
-    Untagged,
+    Untagged {
+        /// List untagged notes from trash instead of active notes
+        #[arg(long)]
+        trashed: bool,
+    },
 
     /// Find notes that link to a given note
     Backlinks {
@@ -186,7 +198,11 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum TagAction {
     /// List all tags as a hierarchical tree
-    List,
+    List {
+        /// List tags for trash instead of active notes
+        #[arg(long)]
+        trashed: bool,
+    },
 
     /// Add tags to a note by ID
     Add {

@@ -84,8 +84,8 @@ bearclaw stats
 
 | Command                                  | Description                                                       |
 | ---------------------------------------- | ----------------------------------------------------------------- |
-| `bearclaw read <id-or-title>`            | Read a note's full content                                        |
-| `bearclaw search <query>`                | Search notes (`--ocr`, `--tag`, `--since`, `--before`, `--limit`) |
+| `bearclaw read <id-or-title>`            | Read a note's full content; use `--trashed` to read from trash    |
+| `bearclaw search <query>`                | Search notes (`--ocr`, `--tag`, `--since`, `--before`, `--limit`, `--trashed`) |
 | `bearclaw create --title "x" --body "y"` | Create a new note (`--tags`, `--body-file`)                       |
 | `bearclaw edit <id> --body "x"`          | Replace note body (`--body-file`)                                 |
 | `bearclaw append <id> --text "x"`        | Append text (`--header`, `--text-file`)                           |
@@ -98,11 +98,11 @@ bearclaw stats
 
 | Command                              | Description                        |
 | ------------------------------------ | ---------------------------------- |
-| `bearclaw tag list`                  | List all tags as hierarchical tree |
+| `bearclaw tag list`                  | List all tags as hierarchical tree; use `--trashed` for trash |
 | `bearclaw tag add <id> --tags "a,b"` | Add tags to a note                 |
 | `bearclaw tag rename <old> <new>`    | Rename a tag                       |
 | `bearclaw tag delete <name>`         | Delete a tag                       |
-| `bearclaw untagged`                  | List notes without tags            |
+| `bearclaw untagged`                  | List notes without tags; use `--trashed` for trash |
 
 ### Analysis & Links
 

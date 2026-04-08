@@ -2,19 +2,25 @@ use anyhow::Result;
 use std::io::Read as _;
 
 use crate::api;
-use crate::db::BearDB;
+use crate::db::{BearDB, NoteLocation};
 use crate::models::Note;
 use crate::output::{self, Response};
 
-pub fn read_note(db: &BearDB, id_or_title: &str, pretty: bool) {
-    match do_read(db, id_or_title) {
+pub fn read_note(db: &BearDB, id_or_title: &str, trashed: bool, pretty: bool) {
+    match do_read(db, id_or_title, trashed) {
         Ok(Some(note)) => output::print_json(&Response::success(note), pretty),
-        Ok(None) => output::print_json(&Response::<()>::error("NOT_FOUND", "Note not found"), pretty),
+        Ok(None) => output::print_json(
+            &Response::<()>::error("NOT_FOUND", "Note not found"),
+            pretty,
+        ),
         Err(e) => {
             let msg = e.to_string();
             if msg == "ENCRYPTED_NOTE" {
                 output::print_json(
-                    &Response::<()>::error("ENCRYPTED_NOTE", "Note is encrypted and cannot be read"),
+                    &Response::<()>::error(
+                        "ENCRYPTED_NOTE",
+                        "Note is encrypted and cannot be read",
+                    ),
                     pretty,
                 );
             } else {
@@ -24,13 +30,23 @@ pub fn read_note(db: &BearDB, id_or_title: &str, pretty: bool) {
     }
 }
 
-fn do_read(db: &BearDB, id_or_title: &str) -> Result<Option<Note>> {
+fn note_location(trashed: bool) -> NoteLocation {
+    if trashed {
+        NoteLocation::Trashed
+    } else {
+        NoteLocation::Active
+    }
+}
+
+fn do_read(db: &BearDB, id_or_title: &str, trashed: bool) -> Result<Option<Note>> {
+    let location = note_location(trashed);
+
     // Try by ID first
-    if let Some(note) = db.read_note_by_id(id_or_title)? {
+    if let Some(note) = db.read_note_by_id(id_or_title, location)? {
         return Ok(Some(note));
     }
     // Try by title
-    let notes = db.read_note_by_title(id_or_title)?;
+    let notes = db.read_note_by_title(id_or_title, location)?;
     match notes.len() {
         0 => Ok(None),
         1 => Ok(Some(notes.into_iter().next().unwrap())),
@@ -47,22 +63,43 @@ pub fn search_notes(
     since: Option<&str>,
     before: Option<&str>,
     limit: u32,
+    trashed: bool,
     pretty: bool,
 ) {
-    match db.search_notes(query, ocr, tag, since, before, limit) {
+    match db.search_notes(
+        query,
+        ocr,
+        tag,
+        since,
+        before,
+        limit,
+        note_location(trashed),
+    ) {
         Ok(notes) => {
             let count = notes.len();
             output::print_json(&Response::success_with_count(notes, count), pretty);
         }
-        Err(e) => output::print_json(&Response::<()>::error("SEARCH_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("SEARCH_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 
-pub fn create_note(title: &str, body: Option<&str>, body_file: Option<&str>, tags: Option<&str>, pretty: bool) {
+pub fn create_note(
+    title: &str,
+    body: Option<&str>,
+    body_file: Option<&str>,
+    tags: Option<&str>,
+    pretty: bool,
+) {
     let body_content = match resolve_text(body, body_file) {
         Ok(t) => t,
         Err(e) => {
-            output::print_json(&Response::<()>::error("INPUT_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("INPUT_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
@@ -71,7 +108,10 @@ pub fn create_note(title: &str, body: Option<&str>, body_file: Option<&str>, tag
 
     match api::create_note(title, body_str, tags, false) {
         Ok(()) => output::print_json(&Response::<()>::ok_empty(), pretty),
-        Err(e) => output::print_json(&Response::<()>::error("CREATE_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("CREATE_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 
@@ -86,7 +126,10 @@ pub fn edit_note(db: &BearDB, id: &str, body: Option<&str>, body_file: Option<&s
             return;
         }
         Err(e) => {
-            output::print_json(&Response::<()>::error("INPUT_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("INPUT_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
@@ -119,7 +162,10 @@ pub fn append_text(
             return;
         }
         Err(e) => {
-            output::print_json(&Response::<()>::error("INPUT_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("INPUT_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
@@ -130,11 +176,20 @@ pub fn append_text(
             &Response::<()>::error("VERIFY_TIMEOUT", "Write could not be verified"),
             pretty,
         ),
-        Err(e) => output::print_json(&Response::<()>::error("APPEND_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("APPEND_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 
-pub fn prepend_text(db: &BearDB, id: &str, text: Option<&str>, text_file: Option<&str>, pretty: bool) {
+pub fn prepend_text(
+    db: &BearDB,
+    id: &str,
+    text: Option<&str>,
+    text_file: Option<&str>,
+    pretty: bool,
+) {
     let content = match resolve_text(text, text_file) {
         Ok(Some(t)) => t,
         Ok(None) => {
@@ -145,7 +200,10 @@ pub fn prepend_text(db: &BearDB, id: &str, text: Option<&str>, text_file: Option
             return;
         }
         Err(e) => {
-            output::print_json(&Response::<()>::error("INPUT_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("INPUT_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
@@ -156,7 +214,10 @@ pub fn prepend_text(db: &BearDB, id: &str, text: Option<&str>, text_file: Option
             &Response::<()>::error("VERIFY_TIMEOUT", "Write could not be verified"),
             pretty,
         ),
-        Err(e) => output::print_json(&Response::<()>::error("PREPEND_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("PREPEND_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 
@@ -184,14 +245,20 @@ pub fn section(db: &BearDB, id_or_title: &str, header: &str, pretty: bool) {
 pub fn trash_note(id: &str, pretty: bool) {
     match api::trash_note(id) {
         Ok(()) => output::print_json(&Response::<()>::ok_empty(), pretty),
-        Err(e) => output::print_json(&Response::<()>::error("TRASH_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("TRASH_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 
 pub fn archive_note(id: &str, pretty: bool) {
     match api::archive_note(id) {
         Ok(()) => output::print_json(&Response::<()>::ok_empty(), pretty),
-        Err(e) => output::print_json(&Response::<()>::error("ARCHIVE_ERROR", &e.to_string()), pretty),
+        Err(e) => output::print_json(
+            &Response::<()>::error("ARCHIVE_ERROR", &e.to_string()),
+            pretty,
+        ),
     }
 }
 

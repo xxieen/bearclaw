@@ -17,3 +17,10 @@
 
 # Environment
 .env
+
+# Local AI/agent artifacts
+.agents/skills/*
+!.agents/skills/bear/
+!.agents/skills/bear/**
+docs/
+tests/

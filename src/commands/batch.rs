@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::api;
-use crate::db::BearDB;
+use crate::db::{BearDB, NoteLocation};
 use crate::output::{self, Response};
 
 #[derive(Debug, Serialize)]
@@ -17,16 +17,22 @@ struct BatchFailure {
 }
 
 pub fn batch_tag(db: &BearDB, filter: &str, tags: &str, pretty: bool) {
-    let notes = match db.search_notes(filter, false, None, None, None, 1000) {
+    let notes = match db.search_notes(filter, false, None, None, None, 1000, NoteLocation::Active) {
         Ok(n) => n,
         Err(e) => {
-            output::print_json(&Response::<()>::error("SEARCH_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("SEARCH_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
 
     if notes.is_empty() {
-        output::print_json(&Response::<()>::error("NOT_FOUND", "No notes match the filter"), pretty);
+        output::print_json(
+            &Response::<()>::error("NOT_FOUND", "No notes match the filter"),
+            pretty,
+        );
         return;
     }
 
@@ -66,16 +72,22 @@ pub fn batch_tag(db: &BearDB, filter: &str, tags: &str, pretty: bool) {
 }
 
 pub fn batch_archive(db: &BearDB, filter: &str, pretty: bool) {
-    let notes = match db.search_notes(filter, false, None, None, None, 1000) {
+    let notes = match db.search_notes(filter, false, None, None, None, 1000, NoteLocation::Active) {
         Ok(n) => n,
         Err(e) => {
-            output::print_json(&Response::<()>::error("SEARCH_ERROR", &e.to_string()), pretty);
+            output::print_json(
+                &Response::<()>::error("SEARCH_ERROR", &e.to_string()),
+                pretty,
+            );
             return;
         }
     };
 
     if notes.is_empty() {
-        output::print_json(&Response::<()>::error("NOT_FOUND", "No notes match the filter"), pretty);
+        output::print_json(
+            &Response::<()>::error("NOT_FOUND", "No notes match the filter"),
+            pretty,
+        );
         return;
     }
 

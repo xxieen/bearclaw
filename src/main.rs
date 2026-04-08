@@ -26,8 +26,11 @@ fn main() {
     };
 
     match cli.command {
-        Commands::Read { id_or_title } => {
-            note::read_note(&db, &id_or_title, pretty);
+        Commands::Read {
+            id_or_title,
+            trashed,
+        } => {
+            note::read_note(&db, &id_or_title, trashed, pretty);
         }
         Commands::Search {
             query,
@@ -36,6 +39,7 @@ fn main() {
             since,
             before,
             limit,
+            trashed,
         } => {
             note::search_notes(
                 &db,
@@ -45,6 +49,7 @@ fn main() {
                 since.as_deref(),
                 before.as_deref(),
                 limit,
+                trashed,
                 pretty,
             );
         }
@@ -54,9 +59,19 @@ fn main() {
             body_file,
             tags,
         } => {
-            note::create_note(&title, body.as_deref(), body_file.as_deref(), tags.as_deref(), pretty);
+            note::create_note(
+                &title,
+                body.as_deref(),
+                body_file.as_deref(),
+                tags.as_deref(),
+                pretty,
+            );
         }
-        Commands::Edit { id, body, body_file } => {
+        Commands::Edit {
+            id,
+            body,
+            body_file,
+        } => {
             note::edit_note(&db, &id, body.as_deref(), body_file.as_deref(), pretty);
         }
         Commands::Append {
@@ -65,12 +80,26 @@ fn main() {
             text_file,
             header,
         } => {
-            note::append_text(&db, &id, text.as_deref(), text_file.as_deref(), header.as_deref(), pretty);
+            note::append_text(
+                &db,
+                &id,
+                text.as_deref(),
+                text_file.as_deref(),
+                header.as_deref(),
+                pretty,
+            );
         }
-        Commands::Prepend { id, text, text_file } => {
+        Commands::Prepend {
+            id,
+            text,
+            text_file,
+        } => {
             note::prepend_text(&db, &id, text.as_deref(), text_file.as_deref(), pretty);
         }
-        Commands::Section { id_or_title, header } => {
+        Commands::Section {
+            id_or_title,
+            header,
+        } => {
             note::section(&db, &id_or_title, &header, pretty);
         }
         Commands::Trash { id } => {
@@ -80,13 +109,13 @@ fn main() {
             note::archive_note(&id, pretty);
         }
         Commands::Tag { action } => match action {
-            TagAction::List => tag::list_tags(&db, pretty),
+            TagAction::List { trashed } => tag::list_tags(&db, trashed, pretty),
             TagAction::Add { id, tags } => tag::add_tag(&db, &id, &tags, pretty),
             TagAction::Rename { old, new } => tag::rename_tag(&old, &new, pretty),
             TagAction::Delete { name } => tag::delete_tag(&name, pretty),
         },
-        Commands::Untagged => {
-            tag::untagged(&db, pretty);
+        Commands::Untagged { trashed } => {
+            tag::untagged(&db, trashed, pretty);
         }
         Commands::Backlinks { id_or_title } => {
             note::backlinks(&db, &id_or_title, pretty);
@@ -128,7 +157,10 @@ fn resolve_db_path(cli: &Cli) -> PathBuf {
 fn open_db(db_path: &PathBuf, pretty: bool) -> Option<BearDB> {
     if !db_path.exists() {
         output::print_json(
-            &Response::<()>::error("DB_NOT_FOUND", &format!("Database not found at: {}", db_path.display())),
+            &Response::<()>::error(
+                "DB_NOT_FOUND",
+                &format!("Database not found at: {}", db_path.display()),
+            ),
             pretty,
         );
         return None;
@@ -160,9 +192,7 @@ fn run_health(db_path: &PathBuf, pretty: bool) {
         schema_ok: false,
     };
 
-    if db_exists
-        && let Ok(db) = BearDB::open(db_path)
-    {
+    if db_exists && let Ok(db) = BearDB::open(db_path) {
         status.schema_ok = db.check_schema();
         if status.schema_ok
             && let Ok(stats) = db.get_stats()

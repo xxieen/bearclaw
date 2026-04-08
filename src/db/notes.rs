@@ -1,22 +1,24 @@
 use anyhow::{Context, Result};
+use rusqlite::{OptionalExtension, params};
 
-use super::BearDB;
 use super::core_data_to_iso;
 use super::iso_to_core_data;
+use super::{BearDB, NoteLocation};
 use crate::models::{BacklinkNote, Note, NoteFile, NoteSummary};
 
 impl BearDB {
-    pub fn read_note_by_id(&self, id: &str) -> Result<Option<Note>> {
+    pub fn read_note_by_id(&self, id: &str, location: NoteLocation) -> Result<Option<Note>> {
         let mut stmt = self.conn().prepare(
             "SELECT n.ZUNIQUEIDENTIFIER, n.ZTITLE, n.ZTEXT, n.ZCREATIONDATE, n.ZMODIFICATIONDATE,
                     n.ZPINNED, n.ZARCHIVED, n.ZTRASHED, n.ZHASFILES, n.ZHASIMAGES, n.ZENCRYPTED
              FROM ZSFNOTE n
              WHERE n.ZUNIQUEIDENTIFIER = ?1
+               AND n.ZTRASHED = ?2
                AND n.ZPERMANENTLYDELETED = 0",
         )?;
 
         let note = stmt
-            .query_row([id], |row| {
+            .query_row(params![id, location.trashed_flag()], |row| {
                 let encrypted: i32 = row.get(10)?;
                 Ok((
                     row.get::<_, String>(0)?,
@@ -36,7 +38,19 @@ impl BearDB {
             .context("Failed to query note")?;
 
         match note {
-            Some((uid, title, text, created, modified, pinned, archived, trashed, has_files, has_images, encrypted)) => {
+            Some((
+                uid,
+                title,
+                text,
+                created,
+                modified,
+                pinned,
+                archived,
+                trashed,
+                has_files,
+                has_images,
+                encrypted,
+            )) => {
                 if encrypted != 0 {
                     anyhow::bail!("ENCRYPTED_NOTE");
                 }
@@ -59,17 +73,17 @@ impl BearDB {
         }
     }
 
-    pub fn read_note_by_title(&self, title: &str) -> Result<Vec<Note>> {
+    pub fn read_note_by_title(&self, title: &str, location: NoteLocation) -> Result<Vec<Note>> {
         let mut stmt = self.conn().prepare(
             "SELECT n.ZUNIQUEIDENTIFIER, n.ZTITLE, n.ZTEXT, n.ZCREATIONDATE, n.ZMODIFICATIONDATE,
                     n.ZPINNED, n.ZARCHIVED, n.ZTRASHED, n.ZHASFILES, n.ZHASIMAGES
              FROM ZSFNOTE n
              WHERE n.ZTITLE = ?1
-               AND n.ZTRASHED = 0 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0",
+               AND n.ZTRASHED = ?2 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0",
         )?;
 
         let notes = stmt
-            .query_map([title], |row| {
+            .query_map(params![title, location.trashed_flag()], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, Option<String>>(1)?,
@@ -86,7 +100,19 @@ impl BearDB {
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut result = Vec::new();
-        for (uid, title, text, created, modified, pinned, archived, trashed, has_files, has_images) in notes {
+        for (
+            uid,
+            title,
+            text,
+            created,
+            modified,
+            pinned,
+            archived,
+            trashed,
+            has_files,
+            has_images,
+        ) in notes
+        {
             let tags = self.get_note_tags_by_uid(&uid)?;
             result.push(Note {
                 id: uid,
@@ -113,13 +139,14 @@ impl BearDB {
         since: Option<&str>,
         before: Option<&str>,
         limit: u32,
+        location: NoteLocation,
     ) -> Result<Vec<NoteSummary>> {
         let mut sql = String::from(
             "SELECT DISTINCT n.ZUNIQUEIDENTIFIER, n.ZTITLE, n.ZCREATIONDATE, n.ZMODIFICATIONDATE, n.ZPINNED
              FROM ZSFNOTE n",
         );
         let mut conditions = vec![
-            "n.ZTRASHED = 0".to_string(),
+            format!("n.ZTRASHED = {}", location.trashed_flag()),
             "n.ZPERMANENTLYDELETED = 0".to_string(),
             "n.ZENCRYPTED = 0".to_string(),
         ];
@@ -175,7 +202,8 @@ impl BearDB {
         sql.push_str(&format!(" LIMIT {limit}"));
 
         let mut stmt = self.conn().prepare(&sql)?;
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> =
+            params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt
             .query_map(param_refs.as_slice(), |row| {
                 Ok((
@@ -282,11 +310,11 @@ impl BearDB {
     }
 
     pub fn get_section(&self, id_or_title: &str, header: &str) -> Result<Option<String>> {
-        let note = self.read_note_by_id(id_or_title)?;
+        let note = self.read_note_by_id(id_or_title, NoteLocation::Active)?;
         let note = match note {
             Some(n) => n,
             None => {
-                let notes = self.read_note_by_title(id_or_title)?;
+                let notes = self.read_note_by_title(id_or_title, NoteLocation::Active)?;
                 match notes.len() {
                     0 => return Ok(None),
                     1 => notes.into_iter().next().unwrap(),
@@ -298,17 +326,17 @@ impl BearDB {
         Ok(extract_section(&note.text, header))
     }
 
-    pub fn get_untagged_notes(&self) -> Result<Vec<NoteSummary>> {
+    pub fn get_untagged_notes(&self, location: NoteLocation) -> Result<Vec<NoteSummary>> {
         let mut stmt = self.conn().prepare(
             "SELECT n.ZUNIQUEIDENTIFIER, n.ZTITLE, n.ZCREATIONDATE, n.ZMODIFICATIONDATE, n.ZPINNED
              FROM ZSFNOTE n
-             WHERE n.ZTRASHED = 0 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0
+             WHERE n.ZTRASHED = ?1 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0
                AND n.Z_PK NOT IN (SELECT Z_5NOTES FROM Z_5TAGS)
              ORDER BY n.ZMODIFICATIONDATE DESC",
         )?;
 
         let notes = stmt
-            .query_map([], |row| {
+            .query_map([location.trashed_flag()], |row| {
                 Ok(NoteSummary {
                     id: row.get::<_, String>(0)?,
                     title: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
@@ -400,7 +428,8 @@ impl BearDB {
         sql.push_str(" ORDER BY n.ZCREATIONDATE DESC");
 
         let mut stmt = self.conn().prepare(&sql)?;
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> =
+            params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt
             .query_map(param_refs.as_slice(), |row| {
                 Ok((
@@ -419,7 +448,19 @@ impl BearDB {
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut result = Vec::new();
-        for (uid, title, text, created, modified, pinned, archived, trashed, has_files, has_images) in rows {
+        for (
+            uid,
+            title,
+            text,
+            created,
+            modified,
+            pinned,
+            archived,
+            trashed,
+            has_files,
+            has_images,
+        ) in rows
+        {
             let tags = self.get_note_tags_by_uid(&uid)?;
             result.push(Note {
                 id: uid,
@@ -468,5 +509,3 @@ fn extract_section(text: &str, header: &str) -> Option<String> {
 
     None
 }
-
-use rusqlite::OptionalExtension;

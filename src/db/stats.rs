@@ -12,9 +12,9 @@ impl BearDB {
             |row| row.get(0),
         )?;
 
-        let total_tags: u32 = self
-            .conn()
-            .query_row("SELECT COUNT(*) FROM ZSFNOTETAG", [], |row| row.get(0))?;
+        let total_tags: u32 =
+            self.conn()
+                .query_row("SELECT COUNT(*) FROM ZSFNOTETAG", [], |row| row.get(0))?;
 
         let archived_count: u32 = self.conn().query_row(
             "SELECT COUNT(*) FROM ZSFNOTE WHERE ZARCHIVED = 1 AND ZPERMANENTLYDELETED = 0 AND ZENCRYPTED = 0",
@@ -53,6 +53,8 @@ impl BearDB {
             "SELECT t.ZTITLE, COUNT(zt.Z_5NOTES) as cnt
              FROM ZSFNOTETAG t
              JOIN Z_5TAGS zt ON t.Z_PK = zt.Z_13TAGS
+             JOIN ZSFNOTE n ON n.Z_PK = zt.Z_5NOTES
+             WHERE n.ZTRASHED = 0 AND n.ZPERMANENTLYDELETED = 0 AND n.ZENCRYPTED = 0
              GROUP BY t.ZTITLE
              ORDER BY cnt DESC",
         )?;
@@ -75,7 +77,8 @@ impl BearDB {
             .query_map([], |row| row.get::<_, f64>(0))?
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut month_map: std::collections::BTreeMap<String, u32> = std::collections::BTreeMap::new();
+        let mut month_map: std::collections::BTreeMap<String, u32> =
+            std::collections::BTreeMap::new();
         for d in &dates {
             let iso = core_data_to_iso(*d);
             if iso.len() >= 7 {
