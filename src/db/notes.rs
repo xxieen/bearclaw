@@ -131,6 +131,7 @@ impl BearDB {
         Ok(result)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn search_notes(
         &self,
         query: &str,
